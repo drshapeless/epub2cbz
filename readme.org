@@ -1,0 +1,9 @@
+#+title: readme
+
+This is a cli application to convert epub to cbz. I make it because
+the comics downloaded from http://mox.moe/ is in epub. When putting
+epub into my kobo with [[https://github.com/koreader/koreader][koreader]], the image is not maximized, instead,
+it is extremely small.
+
+The stupid part is, koreader only support auto maximizing with cbz
+file.
