@@ -3,7 +3,7 @@ use std::{
     fs::File,
     io::{self, BufReader, Read, Write},
 };
-use substring::Substring;
+
 use zip::{read::ZipFile, write::FileOptions, ZipArchive, ZipWriter};
 
 fn main() {
@@ -32,20 +32,26 @@ fn main() {
         let _ = write_image(&mut zip, &mut img, options, 0);
     }
 
-    // Other contents
+    // Open the .opf file.
+
+    let contents = get_opf_string(&mut archive);
+
     let mut i: i32 = 1;
 
     loop {
-        let img_name = get_image(&mut archive, i);
-        if img_name.is_empty() {
+        let ret = contents.find(format!("<item id=\"Page_{}\"", i).as_str());
+        if ret == None {
             break;
-        };
-        let mut img = match archive.by_name(img_name.as_str()) {
-            Ok(file) => file,
-            Err(..) => {
-                break;
-            }
-        };
+        }
+
+        let occur = ret.unwrap();
+        let start = contents[occur..].to_string().find("href").unwrap();
+        let end = contents[occur..].to_string().find("media-type").unwrap();
+
+        let name = contents[occur + start + 6..occur + end - 2].to_string();
+        let img_name = get_image(&mut archive, name);
+
+        let mut img = archive.by_name(img_name.as_str()).ok().unwrap();
 
         let _ = write_image(&mut zip, &mut img, options, i);
 
@@ -72,8 +78,8 @@ fn write_image(
     Ok(())
 }
 
-fn get_image(archive: &mut ZipArchive<BufReader<File>>, i: i32) -> String {
-    let mut file = match archive.by_name(format!("html/{}.html", i).as_str()) {
+fn get_image(archive: &mut ZipArchive<BufReader<File>>, name: String) -> String {
+    let mut file = match archive.by_name(name.as_str()) {
         Ok(file) => file,
         Err(..) => {
             return "".to_string();
@@ -86,5 +92,18 @@ fn get_image(archive: &mut ZipArchive<BufReader<File>>, i: i32) -> String {
     let pos2 = contents.find(".jpg").unwrap();
 
     let temp = contents.to_string();
-    temp.substring(pos1 + 9, pos2).to_string()
+    let ret = temp[pos1 + 13..pos2 + 4].to_string();
+
+    ret
+}
+
+fn get_opf_string(archive: &mut ZipArchive<BufReader<File>>) -> String {
+    let mut opf = match archive.by_name("vol.opf") {
+        Ok(file) => file,
+        Err(..) => panic!("shit!"),
+    };
+
+    let mut contents = String::new();
+    opf.read_to_string(&mut contents).unwrap().to_string();
+    contents
 }
