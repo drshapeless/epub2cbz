@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 zip = "0.6.3"
-substring = "1.4.5"
+quick-xml = "0.27.1"
